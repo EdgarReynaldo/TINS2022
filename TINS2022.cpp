@@ -5,7 +5,7 @@
 #include "Eagle/backends/Allegro5Backend.hpp"
 #include "allegro5/allegro.h"
 
-#include "Eagle/Gui/SimpleMenu.hpp"
+#include "SharkPlayer.hpp"
 
 
 
@@ -24,7 +24,7 @@ int main(int argc , char** argv) {
    
    al_register_trace_handler(PipeToEagleLog);
    
-   SendOutputToFile("ExMenu.log" , "" , false);
+   SendOutputToFile("TINS2022.log" , "" , false);
    
    Allegro5System* sys = GetAllegro5System();
    
@@ -39,38 +39,43 @@ int main(int argc , char** argv) {
    
    EAGLE_ASSERT(win && win->Valid());
    
-   EagleFont* font = win->GetFont("Verdana.ttf" , -20);
+//   EagleFont* font = win->GetFont("Verdana.ttf" , -20);
    
-   EAGLE_ASSERT(font && font->Valid());
+//   EAGLE_ASSERT(font && font->Valid());
+   sys->GetSystemTimer()->Start();
    
    
-   
-   
-   WidgetHandler gui(win , "GUI" , "Example GUI");
-   
-   gui.SetupBuffer(sw , sh , win);
-   
-   gui.SetWidgetArea(Rectangle(0 , 0 , sw , sh));
-   
+   SharkPlayer player;
+   player.Init(win);
 
-   
    bool quit = false;
    bool redraw = true;
    while (!quit) {
       if (redraw) {
          win->SetDrawingTarget(win->GetBackBuffer());
-         win->Clear();
+         win->Clear(EagleColor(0,196,255));
+         player.Draw(400,300);
+         win->FlipDisplay();
          redraw = false;
       }
       while (!sys->UpToDate()) {
          EagleEvent e = sys->WaitForSystemEventAndUpdateState();
-         gui.HandleEvent(e);
-         while (gui.HasMessages()) {
-            WidgetMsg msg = gui.TakeNextMessage();
-            (void)msg;
+         if (e.type == EAGLE_EVENT_KEY_DOWN && e.keyboard.keycode == EAGLE_KEY_ESCAPE) {
+            quit = true;
          }
-
-      
+         if (e.type == EAGLE_EVENT_DISPLAY_CLOSE) {
+            quit = true;
+         }
+         if (e.type == EAGLE_EVENT_TIMER) {
+            player.Update(e.timer.eagle_timer_source->SPT());
+            redraw = true;
+         }
+         if (input_key_press(EAGLE_KEY_F)) {
+            player.AdvanceFrame();
+         }
+         player.HandleEvent(e);
+      }
+   }
    return 0;
 }
 
